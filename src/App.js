@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import "./App.css"
 const drumData = [
   {
     keyTrigger: 'Q',
@@ -56,12 +56,69 @@ const drumData = [
     keyCode: 67
   }
 ];
+const pianoData = [
+  {
+    keyCode: 65,
+    keyTrigger: 'Q',
+    id: 'Chord-1',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Chord_1.mp3',
+  },
+  {
+    keyCode: 83,
+    keyTrigger: 'W',
+    id: 'Chord-2',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Chord_2.mp3',
+  },
+  {
+    keyCode: 68,
+    keyTrigger: 'E',
+    id: 'Chord-3',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Chord_3.mp3',
+  },
+  {
+    keyCode: 70,
+    keyTrigger: 'A',
+    id: 'Shaker',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Give_us_a_light.mp3',
+  },
+  {
+    keyCode: 71,
+    keyTrigger: 'S',
+    id: 'Open-HH',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Dry_Ohh.mp3',
+  },
+  {
+    keyCode: 72,
+    keyTrigger: 'D',
+    id: 'Closed-HH',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Bld_H1.mp3',
+  },
+  {
+    keyCode: 74,
+    keyTrigger: 'Z',
+    id: 'Punchy-Kick',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/punchy_kick_1.mp3',
+  },
+  {
+    keyCode: 75,
+    keyTrigger: 'X',
+    id: 'Side-Stick',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/side_stick_1.mp3',
+  },
+  {
+    keyCode: 76,
+    keyTrigger: 'C',
+    id: 'Snare',
+    url: 'https://s3.amazonaws.com/freecodecamp/drums/Brk_Snr.mp3',
+  },
+];
 
-const DrumPad = ({ drum, isPianoMode, volume, onPadClick }) => {
+
+const DrumPad = ({ drum, isPianoMode, volume, onPadClick, isPowerOn }) => {
   const [isPressed, setIsPressed] = useState(false);
 
   const handleKeyPress = (event) => {
-    if (event.keyCode === drum.keyCode) {
+    if (isPowerOn && event.keyCode === drum.keyCode) {
       const audio = new Audio(drum.url);
       audio.volume = volume / 100;
       audio.play();
@@ -72,12 +129,14 @@ const DrumPad = ({ drum, isPianoMode, volume, onPadClick }) => {
   };
 
   const handleButtonPress = () => {
-    const audio = new Audio(drum.url);
-    audio.volume = volume / 100;
-    audio.play();
-    setIsPressed(true);
-    setTimeout(() => setIsPressed(false), 100);
-    onPadClick(drum.id);
+    if (isPowerOn) {
+      const audio = new Audio(drum.url);
+      audio.volume = volume / 100;
+      audio.play();
+      setIsPressed(true);
+      setTimeout(() => setIsPressed(false), 100);
+      onPadClick(drum.id);
+    }
   };
 
   React.useEffect(() => {
@@ -89,7 +148,7 @@ const DrumPad = ({ drum, isPianoMode, volume, onPadClick }) => {
 
   return (
     <button className={`drum-pad ${isPressed ? 'pressed' : ''}`} onClick={handleButtonPress}>
-      {isPianoMode ? drum.keyTrigger : drum.id}
+      {isPowerOn && (isPianoMode ? drum.keyTrigger : drum.keyTrigger)}
       <audio className="clip" id={drum.keyTrigger} src={drum.url} />
     </button>
   );
@@ -99,6 +158,7 @@ const DrumMachine = () => {
   const [isPianoMode, setIsPianoMode] = useState(false);
   const [volume, setVolume] = useState(50);
   const [displayedKey, setDisplayedKey] = useState('');
+  const [isPowerOn, setIsPowerOn] = useState(true);
 
   const handleVolumeChange = (event) => {
     setVolume(event.target.value);
@@ -110,46 +170,75 @@ const DrumMachine = () => {
   };
 
   const handlePadClick = (id) => {
-    setDisplayedKey(id);
+    if (isPowerOn) {
+      setDisplayedKey(id);
+    }
+  };
+
+  const handlePowerButtonClick = () => {
+    setIsPowerOn(!isPowerOn);
+    setDisplayedKey('');
   };
 
   return (
-    <div id="drum-machine">
-      <div id="display">{displayedKey}</div>
+    <div id="drum">
+            <div className="pads">
+            {isPianoMode
+  ? pianoData.map((piano) => (
+      <DrumPad
+        key={piano.id}
+        drum={piano}
+        isPianoMode={isPianoMode}
+        volume={volume}
+        onPadClick={handlePadClick}
+        isPowerOn={isPowerOn}
+      />
+    ))
+  : drumData.map((drum) => (
+      <DrumPad
+        key={drum.id}
+        drum={drum}
+        isPianoMode={isPianoMode}
+        volume={volume}
+        onPadClick={handlePadClick}
+        isPowerOn={isPowerOn}
+      />
+    ))}
+
+      </div>
       <div className="controls">
+        <div className="power">
+          <button className='powbut' onClick={handlePowerButtonClick}>{isPowerOn ? 'OFF' : 'ON'}</button>
+        </div>
+        <div id="display">{isPowerOn ? (isPianoMode ? displayedKey : displayedKey) : ''}</div>
+
         <div className="volume-slider">
-          <label htmlFor="volume-slider">Volume</label>
           <input
             type="range"
-            id="volume-slider"
+            id="volume"
             min="0"
             max="100"
             value={volume}
             onChange={handleVolumeChange}
+            disabled={!isPowerOn}
           />
         </div>
         <div className="mode-toggle">
-          <label htmlFor="mode-toggle">Mode</label>
+          <label htmlFor="mode">Bank</label><hr/>
           <input
             type="checkbox"
-            id="mode-toggle"
+            id="toggle"
             checked={isPianoMode}
             onChange={handleModeChange}
+            disabled={!isPowerOn}
+            
           />
-          <span>{isPianoMode ? 'Piano Mode' : 'Drum Mode'}</span>
+          <span id='span'>{isPianoMode ? "DRUM":"PIANO"}</span><hr/>
+          <span id='end'>Code by Raghavendra singh</span>
         </div>
       </div>
-      <div className="drum-pads">
-        {drumData.map((drum) => (
-          <DrumPad
-            key={drum.id}
-            drum={drum}
-            isPianoMode={isPianoMode}
-            volume={volume}
-            onPadClick={handlePadClick}
-          />
-        ))}
-      </div>
+     
+
     </div>
   );
 };
